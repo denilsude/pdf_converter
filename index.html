@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Conversor Imagem ↔ PDF (Dark)</title>
+  <title>Sicoob Credseguro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -24,6 +24,8 @@
   <script src="js/jszip.min.js"></script>
   <script src="js/FileSaver.min.js"></script>
   <script src="js/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
 
 </head>
 
@@ -48,6 +50,9 @@
           class="px-4 py-2 bg-green-600 rounded hover:bg-pink-500 transition">Juntar PDFs</button>
         <button onclick="mostrarFormulario('splitPdf', this)"
           class="px-4 py-2 bg-green-600 rounded hover:bg-yellow-500 transition">Dividir PDF</button>
+        <button onclick="mostrarFormulario('ocrImage' , this)"
+          class="px-4 py-2 bg-green-600 rounded hover:bg-indigo-500 transition">Imagem → Texto</button>
+
       </div>
 
       <!-- IMAGEM PARA PDF -->
@@ -189,6 +194,26 @@
           class="mt-4 w-full bg-orange-600 hover:bg-orange-500 text-white py-2 rounded transition">Dividir e Baixar
           ZIP</button>
       </div>
+      <!-- EXTRATO TEXTO DE IMAGEM -->
+      <div id="ocrImage" class="hidden">
+        <div onclick="document.getElementById('ocrInput').click()" ondrop="handleFileDrop(event, 'ocrInput')"
+          ondragover="allowDrop(event)"
+          class="border-2 border-dashed border-indigo-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
+          <p>Arraste uma imagem aqui ou clique para selecionar</p>
+          <input type="file" accept="image/*" id="ocrInput" class="hidden" onchange="previewOcrFile(event)" />
+        </div>
+
+        <div id="ocrPreview" class="mt-4"></div>
+
+        <button onclick="extrairTextoImagem()"
+          class="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded transition">
+          Extrair Texto
+        </button>
+
+        <textarea id="ocrResult" rows="8" class="mt-4 w-full p-2 rounded bg-gray-800 border border-gray-600 text-white"
+          placeholder="O texto extraído aparecerá aqui..."></textarea>
+      </div>
+
 
 
   </div>
@@ -203,6 +228,7 @@
       document.getElementById('pdfFiles').classList.add('hidden');
       document.getElementById('juntarpdf').classList.add('hidden');
       document.getElementById('splitPdf').classList.add('hidden');
+      document.getElementById('ocrImage').classList.add('hidden');
       document.getElementById('outputCanvas').innerHTML = '';
 
       // Mostrar o formulário selecionado
@@ -649,6 +675,38 @@
         novoPDF.save(`${nome}.pdf`);
       };
       reader.readAsArrayBuffer(file);
+    }
+    let ocrFile = null;
+
+    function previewOcrFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      ocrFile = file;
+
+      const preview = document.getElementById('ocrPreview');
+      preview.innerHTML = '';
+
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.className = 'max-w-full max-h-64 mx-auto rounded shadow';
+
+      preview.appendChild(img);
+    }
+
+    async function extrairTextoImagem() {
+      if (!ocrFile) {
+        alert('Selecione uma imagem primeiro.');
+        return;
+      }
+
+      const resultArea = document.getElementById('ocrResult');
+      resultArea.value = 'Processando... aguarde...';
+
+      const worker = await Tesseract.createWorker('por'); // 'por' para Português
+      const { data } = await worker.recognize(ocrFile);
+      resultArea.value = data.text.trim();
+      await worker.terminate();
     }
 
 
