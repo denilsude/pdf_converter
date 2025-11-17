@@ -55,7 +55,6 @@
 
       </div>
 
-      <!-- IMAGEM PARA PDF -->
       <div id="imgToPdf" class="hidden">
         <div id="imgDrop" onclick="document.getElementById('imgInputIPP').click()"
           ondrop="handleFileDropIPP(event, 'imgInputIPP')" ondragover="allowDropIPP(event)"
@@ -89,7 +88,6 @@
           PDF</button>
       </div>
 
-      <!-- PDF PARA IMAGEM -->
       <div id="pdfToImg" class="hidden">
         <div id="pdfDrop" onclick="document.getElementById('pdfInput').click()"
           ondrop="handleFileDrop(event, 'pdfInput')" ondragover="allowDrop(event)"
@@ -131,7 +129,6 @@
 
         <div id="outputCanvas" class="mt-6 space-y-4"></div>
       </div>
-      <!-- JUNTAR PDFs -->
       <div id="juntarpdf" class="hidden">
         <div onclick="document.getElementById('pdfFiles').click()" ondragover="event.preventDefault()"
           ondrop="handleDrop(event)"
@@ -151,13 +148,13 @@
           class="mt-4 w-full bg-pink-600 hover:bg-pink-500 text-white py-2 rounded transition">Juntar e Baixar
           PDF</button>
       </div>
-      <!-- COMPRIMIR PDF -->
+      
       <div id="compressPdf" class="hidden">
         <div onclick="document.getElementById('compressInput').click()" ondrop="handleFileDrop(event, 'compressInput')"
           ondragover="allowDrop(event)"
           class="border-2 border-dashed border-red-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
           <p>Arraste um PDF aqui ou clique para selecionar</p>
-          <input type="file" accept="application/pdf" id="compressInput" class="hidden" />
+          <input type="file" accept="application/pdf" id="compressInput" class="hidden" multiple />
         </div>
 
         <label for="compressQuality" class="block mt-4">Qualidade da Imagem (JPEG):</label>
@@ -170,7 +167,7 @@
         <button onclick="comprimirPDF()"
           class="mt-4 w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded transition">Comprimir e Baixar</button>
       </div>
-      <!-- DIVIDIR PDF -->
+
       <div id="splitPdf" class="hidden">
         <div onclick="document.getElementById('splitInput').click()" ondrop="handleFileDrop(event, 'splitInput')"
           ondragover="allowDrop(event)"
@@ -194,7 +191,6 @@
           class="mt-4 w-full bg-orange-600 hover:bg-orange-500 text-white py-2 rounded transition">Dividir e Baixar
           ZIP</button>
       </div>
-      <!-- EXTRATO TEXTO DE IMAGEM -->
       <div id="ocrImage" class="hidden">
         <div onclick="document.getElementById('ocrInput').click()" ondrop="handleFileDrop(event, 'ocrInput')"
           ondragover="allowDrop(event)"
@@ -220,6 +216,39 @@
 
   <script>
     let selectedImages = [];
+
+    // --- ###################################################### ---
+    // --- #        MUDANÇA 2: ADICIONADO LISTENER          # ---
+    // --- ###################################################### ---
+    // Adiciona um "ouvinte" de evento para o input 'compressInput'
+    // Isso é executado quando o usuário ESCOLHE arquivos (clicando)
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const compressInput = document.getElementById('compressInput');
+        if (compressInput) {
+            compressInput.addEventListener('change', (event) => {
+                const files = event.target.files;
+                const dropAreaText = document.querySelector('#compressPdf p');
+
+                if (!files || files.length === 0) {
+                    // Limpa o texto se o usuário cancelar
+                    if (dropAreaText) {
+                        dropAreaText.textContent = 'Arraste um PDF aqui ou clique para selecionar';
+                    }
+                    return;
+                }
+
+                // Mostra os nomes dos arquivos selecionados
+                const fileNames = Array.from(files).map(file => file.name).join(', ');
+                if (dropAreaText) {
+                    dropAreaText.textContent = 'Arquivos selecionados: ' + fileNames;
+                }
+            });
+        }
+    });
+    // --- ###################################################### ---
+    // --- #                  FIM DA MUDANÇA 2                # ---
+    // --- ###################################################### ---
+
 
     function mostrarFormulario(id, botaoClicado) {
       document.getElementById('imgToPdf').classList.add('hidden');
@@ -249,11 +278,43 @@
     }
 
 
+    // --- ###################################################### ---
+    // --- #        MUDANÇA 3: FUNÇÃO handleFileDrop          # ---
+    // --- ###################################################### ---
+    // Esta função foi modificada para tratar o 'drop' em 'compressInput'
     function handleFileDrop(e, inputId) {
       e.preventDefault();
-      document.getElementById(inputId).files = e.dataTransfer.files;
-      previewFile({ target: { files: e.dataTransfer.files } }, inputId === 'imgInput' ? 'imgPreviewIPP' : 'pdfPreview');
+      const files = e.dataTransfer.files;
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.files = files; // Salva os arquivos no input
+      }
+
+      if (inputId === 'compressInput') {
+        // Lógica para Compressão
+        const fileNames = Array.from(files).map(file => file.name).join(', ');
+        const dropAreaText = document.querySelector('#compressPdf p');
+        if (dropAreaText) {
+          dropAreaText.textContent = 'Arquivos selecionados: ' + fileNames;
+        }
+      } else if (inputId === 'ocrInput') {
+        // Lógica para OCR
+        previewOcrFile({ target: { files: files } });
+      } else if (inputId === 'imgInputIPP') {
+        // Esta é a chamada original de handleFileDropIPP
+        previewFileIPP({ target: { files: files } }, 'imgPreviewIPP');
+      } else if (inputId === 'pdfInput') {
+        // Lógica para PDF -> Imagem
+        previewFile({ target: { files: files } }, 'pdfPreview');
+      } else if (inputId === 'splitInput') {
+        // Lógica para Dividir PDF
+        previewFile({ target: { files: files } }, 'splitPreview');
+      }
     }
+    // --- ###################################################### ---
+    // --- #                  FIM DA MUDANÇA 3                # ---
+    // --- ###################################################### ---
+
 
     function handleFileDropIPP(event, inputId) {
       event.preventDefault();
@@ -638,44 +699,83 @@
       };
       reader.readAsArrayBuffer(file);
     }
+
+    // --- ###################################################### ---
+    // --- #        MUDANÇA 4: FUNÇÃO comprimirPDF            # ---
+    // --- ###################################################### ---
+    // Esta função foi modificada para aceitar múltiplos arquivos
     async function comprimirPDF() {
       const input = document.getElementById('compressInput');
-      const file = input.files[0];
+      const files = input.files; // MUDANÇA: Pega todos os arquivos
       const quality = parseFloat(document.getElementById('compressQuality').value);
       const nome = document.getElementById('compressedName').value.trim() || 'comprimido';
 
-      if (!file) return alert('Selecione um PDF para comprimir.');
+      if (!files || files.length === 0) return alert('Selecione um ou mais PDFs para comprimir.'); // MUDANÇA
 
-      const reader = new FileReader();
-      reader.onload = async function () {
-        const typedarray = new Uint8Array(this.result);
-        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+      // Feedback para o usuário
+      const button = document.querySelector('#compressPdf button');
+      const originalButtonText = button.textContent;
+      button.textContent = 'Comprimindo... aguarde...';
+      button.disabled = true;
 
+      try {
         const { jsPDF } = window.jspdf;
         const novoPDF = new jsPDF();
+        let firstPageInDoc = true; // Controla quando adicionar novas páginas
 
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 2 });
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
+        // Loop principal sobre os ARQUIVOS
+        for (const file of files) {
+          const arrayBuffer = await file.arrayBuffer(); // Converte arquivo para buffer
+          const typedarray = new Uint8Array(arrayBuffer);
+          const pdf = await pdfjsLib.getDocument(typedarray).promise;
 
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          // Loop interno sobre as PÁGINAS de cada arquivo
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            // Aumentar a escala pode melhorar a qualidade final, '2' é um bom valor
+            const viewport = page.getViewport({ scale: 2 });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
 
-          const imgData = canvas.toDataURL('image/jpeg', quality);
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
-          const pageWidth = novoPDF.internal.pageSize.getWidth();
-          const pageHeight = (canvas.height * pageWidth) / canvas.width;
+            // Converte a página renderizada em imagem JPEG com a qualidade escolhida
+            const imgData = canvas.toDataURL('image/jpeg', quality);
 
-          if (i > 1) novoPDF.addPage();
-          novoPDF.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
-        }
+            const pageWidth = novoPDF.internal.pageSize.getWidth();
+            const pageHeight = (canvas.height * pageWidth) / canvas.width;
+
+            if (!firstPageInDoc) {
+              novoPDF.addPage();
+            }
+            firstPageInDoc = false; // A partir da primeira página, sempre adiciona antes
+
+            novoPDF.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+          }
+        } // Fim do loop de arquivos
 
         novoPDF.save(`${nome}.pdf`);
-      };
-      reader.readAsArrayBuffer(file);
+
+      } catch (error) {
+        console.error("Erro ao comprimir PDF:", error);
+        alert("Ocorreu um erro ao comprimir os PDFs.");
+      } finally {
+        // Limpa o input e o texto da área de drop
+        input.value = null; 
+        const dropAreaText = document.querySelector('#compressPdf p');
+        if (dropAreaText) {
+            dropAreaText.textContent = 'Arraste um PDF aqui ou clique para selecionar';
+        }
+        // Restaura o botão
+        button.textContent = originalButtonText;
+        button.disabled = false;
+      }
     }
+    // --- ###################################################### ---
+    // --- #                  FIM DA MUDANÇA 4                # ---
+    // --- ###################################################### ---
+
     let ocrFile = null;
 
     function previewOcrFile(event) {
