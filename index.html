@@ -4,20 +4,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sicoob Credseguro</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Conversor | Credseguro</title>
+  
+  <link rel="icon" type="image/png" href="img/logo_fav.png">
+
+  <script src="js/tailwindcss.js"></script>
   <script>
     tailwind.config = {
-      darkMode: 'class'
-    };
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            // Suas cores personalizadas
+          }
+        }
+      }
+    }
   </script>
   <style>
     .botao-ativo {
       background-color: #054c08 !important;
-      /* Azul escuro (Tailwind bg-blue-900) */
       color: white !important;
     }
+    /* Animação de carregamento */
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 2s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="js/pica.min.js"></script>
   <script src="js/jspdf.umd.min.js"></script>
@@ -25,296 +51,265 @@
   <script src="js/FileSaver.min.js"></script>
   <script src="js/pdf-lib.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
-
 </head>
 
 <body class="bg-teal-950 text-white min-h-screen p-6">
   <div class="flex justify-center mb-6">
     <img src="img/logo.png" alt="Logo" class="h-40 cursor-pointer" onclick="location.reload()"
       onmouseenter="this.src='img/logo-hover.png'" onmouseleave="this.src='img/logo.png'">
-
   </div>
   <br><br><br>
+  
   <div class="max-w-4xl mx-auto">
-    <h1 class="text-center text-xl font-medium mb-6">Selecione a opção desejada:</h2>
-      <br>
-      <div id="botoesFormularios" class="flex justify-center gap-4 mb-6">
-        <button onclick="mostrarFormulario('imgToPdf', this)"
-          class="px-4 py-2 bg-green-600 rounded hover:bg-blue-500 transition">Imagem → PDF</button>
-        <button onclick="mostrarFormulario('pdfToImg', this)"
-          class="px-4 py-2 bg-green-600 rounded hover:bg-purple-500 transition">PDF → Imagem</button>
-        <button onclick="mostrarFormulario('compressPdf', this)"
-          class="px-4 py-2 bg-green-600 rounded hover:bg-red-500 transition">Comprimir PDF</button>
-        <button onclick="mostrarFormulario('juntarpdf', this)"
-          class="px-4 py-2 bg-green-600 rounded hover:bg-pink-500 transition">Juntar PDFs</button>
-        <button onclick="mostrarFormulario('splitPdf', this)"
-          class="px-4 py-2 bg-green-600 rounded hover:bg-yellow-500 transition">Dividir PDF</button>
-        <button onclick="mostrarFormulario('ocrImage' , this)"
-          class="px-4 py-2 bg-green-600 rounded hover:bg-indigo-500 transition">Imagem → Texto</button>
+    <h1 class="text-center text-xl font-medium mb-6">Selecione a opção desejada:</h1>
+    <br>
+    <div id="botoesFormularios" class="flex justify-center gap-4 mb-6 flex-wrap">
+      <button onclick="mostrarFormulario('imgToPdf', this)"
+        class="px-4 py-2 bg-green-600 rounded hover:bg-blue-500 transition">Imagem → PDF</button>
+      <button onclick="mostrarFormulario('pdfToImg', this)"
+        class="px-4 py-2 bg-green-600 rounded hover:bg-purple-500 transition">PDF → Imagem</button>
+      <button onclick="mostrarFormulario('compressPdf', this)"
+        class="px-4 py-2 bg-green-600 rounded hover:bg-red-500 transition">Comprimir PDF</button>
+      <button onclick="mostrarFormulario('juntarpdf', this)"
+        class="px-4 py-2 bg-green-600 rounded hover:bg-pink-500 transition">Juntar PDFs</button>
+      <button onclick="mostrarFormulario('splitPdf', this)"
+        class="px-4 py-2 bg-green-600 rounded hover:bg-yellow-500 transition">Dividir PDF</button>
+      <button onclick="mostrarFormulario('ocrImage' , this)"
+        class="px-4 py-2 bg-green-600 rounded hover:bg-indigo-500 transition">Imagem → Texto</button>
+    </div>
 
+    <div id="statusMessage" class="hidden mb-4 p-4 rounded bg-blue-800 text-center"></div>
+
+    <div id="imgToPdf" class="hidden">
+      <div id="imgDrop" onclick="document.getElementById('imgInputIPP').click()"
+        ondrop="handleFileDropIPP(event, 'imgInputIPP')" ondragover="allowDropIPP(event)"
+        class="border-2 border-dashed border-blue-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
+        <p>Arraste uma ou mais imagens aqui ou clique para selecionar</p>
+        <input type="file" accept="image/*" id="imgInputIPP" class="hidden" multiple
+          onchange="previewFileIPP(event, 'imgPreviewIPP')" />
+      </div>
+      <div id="imgPreviewIPP" class="mt-4 flex flex-wrap gap-4"></div>
+
+      <div class="flex gap-2 mt-4 text-sm">
+        <button onclick="setImgPreset('alta')" class="flex-1 bg-green-700 hover:bg-green-600 px-2 py-1 rounded">Alta qualidade</button>
+        <button onclick="setImgPreset('equilibrado')" class="flex-1 bg-blue-700 hover:bg-blue-600 px-2 py-1 rounded">Equilibrado</button>
+        <button onclick="setImgPreset('compacto')" class="flex-1 bg-yellow-700 hover:bg-yellow-600 px-2 py-1 rounded">Compacto</button>
       </div>
 
-      <div id="imgToPdf" class="hidden">
-        <div id="imgDrop" onclick="document.getElementById('imgInputIPP').click()"
-          ondrop="handleFileDropIPP(event, 'imgInputIPP')" ondragover="allowDropIPP(event)"
-          class="border-2 border-dashed border-blue-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
-          <p>Arraste uma ou mais imagens aqui ou clique para selecionar</p>
-          <input type="file" accept="image/*" id="imgInputIPP" class="hidden" multiple
-            onchange="previewFileIPP(event, 'imgPreviewIPP')" />
-        </div>
-        <div id="imgPreviewIPP" class="mt-4 flex flex-wrap gap-4"></div>
+      <label for="imgQuality" class="block mt-4">Qualidade (JPEG):</label>
+      <input type="range" min="0.1" max="1" step="0.1" value="0.9" id="imgQuality" class="w-full">
+      <label for="imgScale" class="block mt-2">Redução de Tamanho (%):</label>
+      <input type="range" min="30" max="100" step="10" value="95" id="imgScale" class="w-full">
 
-        <div class="flex gap-2 mt-4 text-sm">
-          <button onclick="setImgPreset('alta')" class="flex-1 bg-green-700 hover:bg-green-600 px-2 py-1 rounded">Alta
-            qualidade</button>
-          <button onclick="setImgPreset('equilibrado')"
-            class="flex-1 bg-blue-700 hover:bg-blue-600 px-2 py-1 rounded">Equilibrado</button>
-          <button onclick="setImgPreset('compacto')"
-            class="flex-1 bg-yellow-700 hover:bg-yellow-600 px-2 py-1 rounded">Compacto</button>
-        </div>
+      <label for="pdfName" class="block mt-4">Nome do arquivo PDF (opcional):</label>
+      <input id="pdfName" type="text" placeholder="Arquivo..."
+        class="w-full p-2 mt-1 rounded bg-gray-800 border border-gray-600 text-white">
 
-        <label for="imgQuality" class="block mt-4">Qualidade (JPEG):</label>
-        <input type="range" min="0.1" max="1" step="0.1" value="0.9" id="imgQuality" class="w-full">
-        <label for="imgScale" class="block mt-2">Redução de Tamanho (%):</label>
-        <input type="range" min="30" max="100" step="10" value="95" id="imgScale" class="w-full">
+      <button onclick="converterImagensParaPDF()"
+        class="mt-4 w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded transition">Converter e Baixar PDF</button>
+    </div>
 
-        <label for="pdfName" class="block mt-4">Nome do arquivo PDF:(opcional)</label>
-        <input id="pdfName" type="text" placeholder="Arquivo..."
-          class="w-full p-2 mt-1 rounded bg-gray-800 border border-gray-600 text-white">
+    <div id="pdfToImg" class="hidden">
+      <div id="pdfDrop" onclick="document.getElementById('pdfInput').click()"
+        ondrop="handleFileDrop(event, 'pdfInput')" ondragover="allowDrop(event)"
+        class="border-2 border-dashed border-purple-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
+        <p>Arraste um PDF aqui ou clique para selecionar</p>
+        <input type="file" accept="application/pdf" id="pdfInput" class="hidden"
+          onchange="previewFile(event, 'pdfPreview')" />
+      </div>
+      <div id="pdfPreview" class="mt-4"></div>
 
-        <button onclick="converterImagensParaPDF()"
-          class="mt-4 w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded transition">Converter e Baixar
-          PDF</button>
+      <div class="flex gap-2 mt-4 text-sm">
+        <button onclick="setPreset('alta')" class="flex-1 bg-green-700 hover:bg-green-600 px-2 py-1 rounded">Alta qualidade</button>
+        <button onclick="setPreset('equilibrado')" class="flex-1 bg-blue-700 hover:bg-blue-600 px-2 py-1 rounded">Equilibrado</button>
+        <button onclick="setPreset('compacto')" class="flex-1 bg-yellow-700 hover:bg-yellow-600 px-2 py-1 rounded">Compacto</button>
       </div>
 
-      <div id="pdfToImg" class="hidden">
-        <div id="pdfDrop" onclick="document.getElementById('pdfInput').click()"
-          ondrop="handleFileDrop(event, 'pdfInput')" ondragover="allowDrop(event)"
-          class="border-2 border-dashed border-purple-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
-          <p>Arraste um PDF aqui ou clique para selecionar</p>
-          <input type="file" accept="application/pdf" id="pdfInput" class="hidden"
-            onchange="previewFile(event, 'pdfPreview')" />
-        </div>
-        <div id="pdfPreview" class="mt-4"></div>
+      <label for="pdfImgQuality" class="block mt-4">Qualidade (JPEG):</label>
+      <input type="range" id="pdfImgQuality" min="0.1" max="1" step="0.1" value="0.7" class="w-full">
+      <label for="pdfImgScale" class="block mt-2">Redução de Tamanho (%):</label>
+      <input type="range" id="pdfImgScale" min="30" max="100" step="10" value="70" class="w-full">
 
-        <div class="flex gap-2 mt-4 text-sm">
-          <button onclick="setPreset('alta')" class="flex-1 bg-green-700 hover:bg-green-600 px-2 py-1 rounded">Alta
-            qualidade</button>
-          <button onclick="setPreset('equilibrado')"
-            class="flex-1 bg-blue-700 hover:bg-blue-600 px-2 py-1 rounded">Equilibrado</button>
-          <button onclick="setPreset('compacto')"
-            class="flex-1 bg-yellow-700 hover:bg-yellow-600 px-2 py-1 rounded">Compacto</button>
-        </div>
+      <label for="imgZipName" class="block mt-4">Nome base para as imagens (opcional):</label>
+      <input id="imgZipName" type="text" placeholder="Página"
+        class="w-full p-2 mt-1 rounded bg-gray-800 border border-gray-600 text-white">
 
-        <label for="pdfImgQuality" class="block mt-4">Qualidade (JPEG):</label>
-        <input type="range" id="pdfImgQuality" min="0.1" max="1" step="0.1" value="0.7" class="w-full">
-        <label for="pdfImgScale" class="block mt-2">Redução de Tamanho (%):</label>
-        <input type="range" id="pdfImgScale" min="30" max="100" step="10" value="70" class="w-full">
+      <button onclick="converterPDFparaImagem()"
+        class="mt-4 w-full bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded transition">Converter PDF para Imagem</button>
 
-        <label for="imgZipName" class="block mt-4">Nome base para as imagens::(opcional)</label>
-        <input id="imgZipName" type="text" placeholder="Página"
-          class="w-full p-2 mt-1 rounded bg-gray-800 border border-gray-600 text-white">
-
-        <button onclick="converterPDFparaImagem()"
-          class="mt-4 w-full bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded transition">Converter PDF para
-          Imagem</button>
-
-        <div class="flex gap-2 mt-4">
-          <button onclick="baixarTodasImagens()"
-            class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded transition">Baixar Tudo</button>
-          <button onclick="document.getElementById('outputCanvas').innerHTML = ''"
-            class="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded transition">Limpar Tudo</button>
-        </div>
-
-        <div id="outputCanvas" class="mt-6 space-y-4"></div>
+      <div class="flex gap-2 mt-4">
+        <button onclick="baixarTodasImagens()"
+          class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded transition">Baixar Tudo (ZIP)</button>
+        <button onclick="document.getElementById('outputCanvas').innerHTML = ''"
+          class="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded transition">Limpar Tudo</button>
       </div>
-      <div id="juntarpdf" class="hidden">
-        <div onclick="document.getElementById('pdfFiles').click()" ondragover="event.preventDefault()"
-          ondrop="handleDrop(event)"
-          class="border-2 border-dashed border-pink-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
-          <p>Arraste dois ou mais PDFs aqui ou clique para selecionar</p>
-          <input type="file" multiple accept="application/pdf" id="pdfFiles" style="display:none"
-            onchange="handleFiles(this.files)">
 
-        </div>
-        <ul id="fileList"></ul>
+      <div id="outputCanvas" class="mt-6 space-y-4"></div>
+    </div>
 
-        <label for="fileNameInput" class="block mt-4">Nome do PDF final::(opcional)</label>
-        <input id="fileNameInput" type="text" placeholder="juntado"
-          class="w-full p-2 mt-1 rounded bg-gray-800 border border-gray-600 text-white">
+    <div id="juntarpdf" class="hidden">
+      <div onclick="document.getElementById('pdfFiles').click()" ondragover="event.preventDefault()"
+        ondrop="handleDrop(event)"
+        class="border-2 border-dashed border-pink-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
+        <p>Arraste dois ou mais PDFs aqui ou clique para selecionar</p>
+        <input type="file" multiple accept="application/pdf" id="pdfFiles" style="display:none"
+          onchange="handleFiles(this.files)">
+      </div>
+      <ul id="fileList" class="mt-4 space-y-2"></ul>
 
-        <button onclick="mergePDFs()"
-          class="mt-4 w-full bg-pink-600 hover:bg-pink-500 text-white py-2 rounded transition">Juntar e Baixar
-          PDF</button>
+      <label for="fileNameInput" class="block mt-4">Nome do PDF final (opcional):</label>
+      <input id="fileNameInput" type="text" placeholder="juntado"
+        class="w-full p-2 mt-1 rounded bg-gray-800 border border-gray-600 text-white">
+
+      <button onclick="mergePDFs()"
+        class="mt-4 w-full bg-pink-600 hover:bg-pink-500 text-white py-2 rounded transition">Juntar e Baixar PDF</button>
+    </div>
+
+    <div id="compressPdf" class="hidden">
+      <div onclick="document.getElementById('compressInput').click()" ondrop="handleFileDrop(event, 'compressInput')"
+        ondragover="allowDrop(event)"
+        class="border-2 border-dashed border-red-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
+        <p>Arraste um ou mais PDFs aqui ou clique para selecionar</p>
+        <input type="file" accept="application/pdf" id="compressInput" class="hidden" multiple />
       </div>
       
-      <div id="compressPdf" class="hidden">
-        <div onclick="document.getElementById('compressInput').click()" ondrop="handleFileDrop(event, 'compressInput')"
-          ondragover="allowDrop(event)"
-          class="border-2 border-dashed border-red-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
-          <p>Arraste um PDF aqui ou clique para selecionar</p>
-          <input type="file" accept="application/pdf" id="compressInput" class="hidden" multiple />
+      <div class="mt-4 p-4 bg-gray-800 rounded">
+        <p class="text-sm text-yellow-400 mb-2">ℹ️ <strong>Nota:</strong> A compressão converte as páginas em imagens. Isso é ideal para documentos digitalizados. Documentos de texto puro podem não reduzir muito.</p>
+        
+        <label for="compressQuality" class="block mt-2">Nível de Compressão (Qualidade da Imagem):</label>
+        <div class="flex justify-between text-xs text-gray-400">
+            <span>Alta Compressão (Menor qualidade)</span>
+            <span>Baixa Compressão (Melhor qualidade)</span>
         </div>
+        <input type="range" min="0.1" max="1.0" step="0.1" value="0.5" id="compressQuality" class="w-full mt-1">
+        <div class="text-center text-sm mt-1" id="qualityValueDisplay">Valor: 0.5</div>
 
-        <label for="compressQuality" class="block mt-4">Qualidade da Imagem (JPEG):</label>
-        <input type="range" min="0.1" max="1" step="0.1" value="0.6" id="compressQuality" class="w-full">
-
-        <label for="compressedName" class="block mt-4">Nome do PDF Comprimido:</label>
-        <input id="compressedName" type="text" placeholder="comprimido"
-          class="w-full p-2 mt-1 rounded bg-gray-800 border border-gray-600 text-white">
-
-        <button onclick="comprimirPDF()"
-          class="mt-4 w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded transition">Comprimir e Baixar</button>
+        <label for="compressScale" class="block mt-4">Resolução (Escala):</label>
+        <p class="text-xs text-gray-400">Diminua a escala se o arquivo ainda ficar grande (Padrão: 1.0)</p>
+        <input type="range" min="0.5" max="2.0" step="0.1" value="1.0" id="compressScale" class="w-full mt-1">
+        <div class="text-center text-sm mt-1" id="scaleValueDisplay">Escala: 1.0x</div>
       </div>
 
-      <div id="splitPdf" class="hidden">
-        <div onclick="document.getElementById('splitInput').click()" ondrop="handleFileDrop(event, 'splitInput')"
-          ondragover="allowDrop(event)"
-          class="border-2 border-dashed border-orange-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
-          <p>Arraste um PDF aqui ou clique para selecionar</p>
-          <input type="file" accept="application/pdf" id="splitInput" class="hidden"
-            onchange="previewFile(event, 'splitPreview')" />
-        </div>
-        <div id="splitPreview" class="mt-4"></div>
+      <button onclick="comprimirPDF()" id="btnCompress"
+        class="mt-4 w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded transition font-bold">
+        Comprimir e Baixar
+      </button>
+    </div>
 
-        <label for="splitPages" class="block mt-4">Páginas a extrair (ex: 1,3,5-7):</label>
-        <input id="splitPages" type="text" placeholder="1,3,5-7"
-          class="w-full p-2 mt-1 rounded bg-gray-800 border border-gray-600 text-white">
-
-        <label for="splitBaseName" class="block mt-4">Nome base para os arquivos::(opcional)</label>
-        <input id="splitBaseName" type="text" placeholder="pagina"
-          class="w-full p-2 mt-1 rounded bg-gray-800 border border-gray-600 text-white">
-
-
-        <button onclick="dividirPDF()"
-          class="mt-4 w-full bg-orange-600 hover:bg-orange-500 text-white py-2 rounded transition">Dividir e Baixar
-          ZIP</button>
+    <div id="splitPdf" class="hidden">
+      <div onclick="document.getElementById('splitInput').click()" ondrop="handleFileDrop(event, 'splitInput')"
+        ondragover="allowDrop(event)"
+        class="border-2 border-dashed border-orange-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
+        <p>Arraste um PDF aqui ou clique para selecionar</p>
+        <input type="file" accept="application/pdf" id="splitInput" class="hidden"
+          onchange="previewFile(event, 'splitPreview')" />
       </div>
-      <div id="ocrImage" class="hidden">
-        <div onclick="document.getElementById('ocrInput').click()" ondrop="handleFileDrop(event, 'ocrInput')"
-          ondragover="allowDrop(event)"
-          class="border-2 border-dashed border-indigo-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
-          <p>Arraste uma imagem aqui ou clique para selecionar</p>
-          <input type="file" accept="image/*" id="ocrInput" class="hidden" onchange="previewOcrFile(event)" />
-        </div>
+      <div id="splitPreview" class="mt-4"></div>
 
-        <div id="ocrPreview" class="mt-4"></div>
+      <label for="splitPages" class="block mt-4">Páginas a extrair (ex: 1,3,5-7):</label>
+      <input id="splitPages" type="text" placeholder="1,3,5-7"
+        class="w-full p-2 mt-1 rounded bg-gray-800 border border-gray-600 text-white">
 
-        <button onclick="extrairTextoImagem()"
-          class="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded transition">
-          Extrair Texto
-        </button>
+      <label for="splitBaseName" class="block mt-4">Nome base para os arquivos (opcional):</label>
+      <input id="splitBaseName" type="text" placeholder="pagina"
+        class="w-full p-2 mt-1 rounded bg-gray-800 border border-gray-600 text-white">
 
-        <textarea id="ocrResult" rows="8" class="mt-4 w-full p-2 rounded bg-gray-800 border border-gray-600 text-white"
-          placeholder="O texto extraído aparecerá aqui..."></textarea>
+      <button onclick="dividirPDF()"
+        class="mt-4 w-full bg-orange-600 hover:bg-orange-500 text-white py-2 rounded transition">Dividir e Baixar ZIP</button>
+    </div>
+
+    <div id="ocrImage" class="hidden">
+      <div onclick="document.getElementById('ocrInput').click()" ondrop="handleFileDrop(event, 'ocrInput')"
+        ondragover="allowDrop(event)"
+        class="border-2 border-dashed border-indigo-400 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
+        <p>Arraste uma imagem aqui ou clique para selecionar</p>
+        <input type="file" accept="image/*" id="ocrInput" class="hidden" onchange="previewOcrFile(event)" />
       </div>
 
+      <div id="ocrPreview" class="mt-4"></div>
 
+      <button onclick="extrairTextoImagem()"
+        class="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded transition">
+        Extrair Texto
+      </button>
 
+      <textarea id="ocrResult" rows="8" class="mt-4 w-full p-2 rounded bg-gray-800 border border-gray-600 text-white"
+        placeholder="O texto extraído aparecerá aqui..."></textarea>
+    </div>
   </div>
 
   <script>
-    let selectedImages = [];
-
-    // --- ###################################################### ---
-    // --- #        MUDANÇA 2: ADICIONADO LISTENER          # ---
-    // --- ###################################################### ---
-    // Adiciona um "ouvinte" de evento para o input 'compressInput'
-    // Isso é executado quando o usuário ESCOLHE arquivos (clicando)
+    // Configuração inicial de listeners
     document.addEventListener('DOMContentLoaded', (event) => {
+        // Listener para mostrar arquivos selecionados na Compressão
         const compressInput = document.getElementById('compressInput');
         if (compressInput) {
             compressInput.addEventListener('change', (event) => {
-                const files = event.target.files;
-                const dropAreaText = document.querySelector('#compressPdf p');
-
-                if (!files || files.length === 0) {
-                    // Limpa o texto se o usuário cancelar
-                    if (dropAreaText) {
-                        dropAreaText.textContent = 'Arraste um PDF aqui ou clique para selecionar';
-                    }
-                    return;
-                }
-
-                // Mostra os nomes dos arquivos selecionados
-                const fileNames = Array.from(files).map(file => file.name).join(', ');
-                if (dropAreaText) {
-                    dropAreaText.textContent = 'Arquivos selecionados: ' + fileNames;
-                }
+                updateDropAreaText('compressPdf', event.target.files);
             });
         }
+        
+        // Listeners para atualizar displays de valor (range sliders)
+        document.getElementById('compressQuality').addEventListener('input', (e) => {
+            document.getElementById('qualityValueDisplay').textContent = `Valor: ${e.target.value}`;
+        });
+        document.getElementById('compressScale').addEventListener('input', (e) => {
+            document.getElementById('scaleValueDisplay').textContent = `Escala: ${e.target.value}x`;
+        });
     });
-    // --- ###################################################### ---
-    // --- #                  FIM DA MUDANÇA 2                # ---
-    // --- ###################################################### ---
 
+    // Função auxiliar para atualizar texto da área de drop
+    function updateDropAreaText(containerId, files) {
+        const dropAreaText = document.querySelector(`#${containerId} p`);
+        if (!files || files.length === 0) {
+            if (dropAreaText) dropAreaText.textContent = 'Arraste arquivo(s) aqui ou clique para selecionar';
+            return;
+        }
+        const fileNames = Array.from(files).map(file => file.name).join(', ');
+        if (dropAreaText) dropAreaText.textContent = 'Selecionado(s): ' + fileNames;
+    }
+
+    let selectedImages = [];
 
     function mostrarFormulario(id, botaoClicado) {
-      document.getElementById('imgToPdf').classList.add('hidden');
-      document.getElementById('pdfToImg').classList.add('hidden');
-      document.getElementById('compressPdf').classList.add('hidden');
+      // Esconde todos
+      ['imgToPdf', 'pdfToImg', 'compressPdf', 'juntarpdf', 'splitPdf', 'ocrImage'].forEach(elId => {
+          document.getElementById(elId).classList.add('hidden');
+      });
       document.getElementById('pdfFiles').classList.add('hidden');
-      document.getElementById('juntarpdf').classList.add('hidden');
-      document.getElementById('splitPdf').classList.add('hidden');
-      document.getElementById('ocrImage').classList.add('hidden');
       document.getElementById('outputCanvas').innerHTML = '';
+      document.getElementById('statusMessage').classList.add('hidden');
 
-      // Mostrar o formulário selecionado
+      // Mostra o selecionado
       document.getElementById(id).classList.remove('hidden');
 
-      // Remover destaque de todos os botões
+      // Atualiza botões
       const botoes = document.querySelectorAll('#botoesFormularios button');
       botoes.forEach(btn => btn.classList.remove('botao-ativo'));
-
-      // Destacar o botão clicado
       botaoClicado.classList.add('botao-ativo');
     }
 
     function allowDrop(e) { e.preventDefault(); }
+    function allowDropIPP(event) { event.preventDefault(); }
 
-    function allowDropIPP(event) {
-      event.preventDefault();
-    }
-
-
-    // --- ###################################################### ---
-    // --- #        MUDANÇA 3: FUNÇÃO handleFileDrop          # ---
-    // --- ###################################################### ---
-    // Esta função foi modificada para tratar o 'drop' em 'compressInput'
     function handleFileDrop(e, inputId) {
       e.preventDefault();
       const files = e.dataTransfer.files;
       const input = document.getElementById(inputId);
-      if (input) {
-        input.files = files; // Salva os arquivos no input
-      }
+      if (input) input.files = files;
 
       if (inputId === 'compressInput') {
-        // Lógica para Compressão
-        const fileNames = Array.from(files).map(file => file.name).join(', ');
-        const dropAreaText = document.querySelector('#compressPdf p');
-        if (dropAreaText) {
-          dropAreaText.textContent = 'Arquivos selecionados: ' + fileNames;
-        }
+        updateDropAreaText('compressPdf', files);
       } else if (inputId === 'ocrInput') {
-        // Lógica para OCR
         previewOcrFile({ target: { files: files } });
       } else if (inputId === 'imgInputIPP') {
-        // Esta é a chamada original de handleFileDropIPP
         previewFileIPP({ target: { files: files } }, 'imgPreviewIPP');
       } else if (inputId === 'pdfInput') {
-        // Lógica para PDF -> Imagem
         previewFile({ target: { files: files } }, 'pdfPreview');
       } else if (inputId === 'splitInput') {
-        // Lógica para Dividir PDF
         previewFile({ target: { files: files } }, 'splitPreview');
       }
     }
-    // --- ###################################################### ---
-    // --- #                  FIM DA MUDANÇA 3                # ---
-    // --- ###################################################### ---
-
 
     function handleFileDropIPP(event, inputId) {
       event.preventDefault();
@@ -330,42 +325,17 @@
       const preview = document.getElementById(previewId);
       preview.innerHTML = '';
       files.forEach((file, index) => {
-        if (file.type.startsWith('image')) {
-          const wrapper = document.createElement('div');
-          wrapper.className = 'relative';
-
-          const img = document.createElement('img');
-          img.src = URL.createObjectURL(file);
-          img.className = 'w-24 h-24 object-cover rounded shadow';
-
-          const btn = document.createElement('button');
-          btn.innerText = '✕';
-          btn.className = 'absolute top-0 right-0 bg-red-600 text-white rounded-full w-6 h-6 text-sm';
-          btn.onclick = () => {
-            files.splice(index, 1);
-            const dt = new DataTransfer();
-            files.forEach(f => dt.items.add(f));
-            document.getElementById(event.target.id).files = dt.files;
-            previewFile({ target: { files: dt.files } }, previewId);
-          };
-
-          wrapper.appendChild(img);
-          wrapper.appendChild(btn);
-          preview.appendChild(wrapper);
-        } else if (file.type === 'application/pdf') {
+        if (file.type === 'application/pdf') {
           const div = document.createElement('div');
-          div.className = 'p-2 bg-gray-800 rounded shadow';
-          div.innerText = `📄 ${file.name}`;
+          div.className = 'p-2 bg-gray-800 rounded shadow mb-2 flex justify-between items-center';
+          div.innerHTML = `<span>📄 ${file.name}</span>`;
           preview.appendChild(div);
         }
       });
     }
 
-
     function previewFileIPP(event, previewId) {
       const files = Array.from(event.target.files);
-
-
       files.forEach(file => {
         if (file.type.startsWith('image')) {
           const url = URL.createObjectURL(file);
@@ -379,50 +349,28 @@
     function renderPreview(previewId) {
       const preview = document.getElementById(previewId);
       preview.innerHTML = '';
-
       selectedImages.forEach((item, index) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'relative border border-gray-700 rounded p-1 cursor-move inline-block m-1';
-        wrapper.draggable = true;
-        wrapper.dataset.index = index;
-
+        
         const img = document.createElement('img');
         img.src = item.url;
         img.className = 'max-w-[150px] max-h-[150px] object-contain';
 
         const btn = document.createElement('button');
         btn.innerText = '✕';
-        btn.className = 'absolute top-0 right-0 bg-red-600 hover:bg-red-700 text-white rounded p-1';
+        btn.className = 'absolute top-0 right-0 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md';
         btn.onclick = () => {
           URL.revokeObjectURL(item.url);
           selectedImages.splice(index, 1);
           renderPreview(previewId);
         };
 
-        wrapper.addEventListener('dragstart', e => {
-          e.dataTransfer.setData('text/plain', index);
-        });
-
-        wrapper.addEventListener('dragover', e => e.preventDefault());
-
-        wrapper.addEventListener('drop', e => {
-          e.preventDefault();
-          const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-          const toIndex = index;
-
-          if (fromIndex === toIndex) return;
-
-          const movedItem = selectedImages.splice(fromIndex, 1)[0];
-          selectedImages.splice(toIndex, 0, movedItem);
-          renderPreview(previewId);
-        });
-
         wrapper.appendChild(img);
         wrapper.appendChild(btn);
         preview.appendChild(wrapper);
       });
     }
-
 
     function setPreset(tipo) {
       const qual = document.getElementById('pdfImgQuality');
@@ -465,25 +413,101 @@
       }
       pdf.save(`${nome}.pdf`);
     }
-    async function juntarPDFs() {
-      const input = document.getElementById('mergeInput');
-      const files = Array.from(input.files).sort((a, b) => a.name.localeCompare(b.name));
-      const nome = document.getElementById('mergedName').value.trim() || 'juntado';
 
-      if (files.length < 2) return alert('Selecione pelo menos dois PDFs');
+    // --- FUNÇÃO COMPRIMIR PDF ---
+    async function comprimirPDF() {
+      const input = document.getElementById('compressInput');
+      const files = input.files;
+      const quality = parseFloat(document.getElementById('compressQuality').value);
+      const scale = parseFloat(document.getElementById('compressScale').value);
+      
+      if (!files || files.length === 0) return alert('Selecione um ou mais PDFs para comprimir.');
 
-      const mergedPdf = await PDFLib.PDFDocument.create();
+      const button = document.getElementById('btnCompress');
+      const originalText = button.textContent;
+      const statusDiv = document.getElementById('statusMessage');
+      
+      button.innerHTML = '<div class="loader"></div> Processando...';
+      button.disabled = true;
+      statusDiv.classList.remove('hidden');
+      statusDiv.textContent = "Iniciando compressão...";
 
-      for (const file of files) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
-        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-        copiedPages.forEach(page => mergedPdf.addPage(page));
+      try {
+        const { jsPDF } = window.jspdf;
+        const zip = new JSZip();
+        let singlePDFBlob = null;
+        let singleFileName = "";
+
+        // Processa cada arquivo individualmente
+        for (let f = 0; f < files.length; f++) {
+            const file = files[f];
+            statusDiv.textContent = `Processando arquivo ${f + 1} de ${files.length}: ${file.name}`;
+            
+            const arrayBuffer = await file.arrayBuffer();
+            const typedarray = new Uint8Array(arrayBuffer);
+            const pdfDoc = await pdfjsLib.getDocument(typedarray).promise;
+            
+            // Cria um novo PDF para este arquivo
+            const novoPDF = new jsPDF();
+            let firstPage = true;
+
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+                const page = await pdfDoc.getPage(i);
+                // Usa a escala definida pelo usuário (padrão 1.0 para não inflar o tamanho)
+                const viewport = page.getViewport({ scale: scale });
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                await page.render({ 
+                    canvasContext: canvas.getContext('2d'), 
+                    viewport 
+                }).promise;
+
+                // Comprime a imagem
+                const imgData = canvas.toDataURL('image/jpeg', quality);
+                
+                // Adiciona ao novo PDF
+                const pdfWidth = novoPDF.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                if (!firstPage) novoPDF.addPage();
+                firstPage = false;
+                novoPDF.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            }
+
+            // Define o nome do arquivo de saída
+            const originalName = file.name.replace('.pdf', '');
+            const outputName = `${originalName}_comprimido.pdf`;
+            
+            if (files.length === 1) {
+                singlePDFBlob = novoPDF.output('blob');
+                singleFileName = outputName;
+            } else {
+                zip.file(outputName, novoPDF.output('blob'));
+            }
+        }
+
+        statusDiv.textContent = "Finalizando e baixando...";
+
+        if (files.length === 1) {
+            saveAs(singlePDFBlob, singleFileName);
+        } else {
+            const content = await zip.generateAsync({ type: "blob" });
+            saveAs(content, "arquivos_comprimidos.zip");
+        }
+
+      } catch (error) {
+        console.error(error);
+        alert("Erro na compressão: " + error.message);
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+        statusDiv.classList.add('hidden');
+        input.value = null; // Limpa a seleção
+        updateDropAreaText('compressPdf', null);
       }
-
-      const mergedBytes = await mergedPdf.save();
-      const blob = new Blob([mergedBytes], { type: 'application/pdf' });
-      saveAs(blob, `${nome}.pdf`);
     }
 
     let pdfFiles = [];
@@ -496,21 +520,19 @@
       renderFileList();
     }
 
-    function handleDrop(event) {
-      event.preventDefault();
-      handleFiles(event.dataTransfer.files);
-    }
-
     function renderFileList() {
       const list = document.getElementById('fileList');
       list.innerHTML = '';
       pdfFiles.forEach((file, index) => {
         const li = document.createElement('li');
+        li.className = "flex justify-between items-center bg-gray-800 p-2 rounded";
         li.innerHTML = `
-          ${index + 1}. ${file.name}
-          <button class="small-btn" onclick="moveUp(${index})">🔼</button>
-          <button class="small-btn" onclick="moveDown(${index})">🔽</button>
-          <button class="small-btn delete-btn" onclick="removeFile(${index})">❌ Remover</button>
+          <span class="truncate w-2/3">${index + 1}. ${file.name}</span>
+          <div class="flex gap-2">
+            <button class="text-blue-400 hover:text-blue-300" onclick="moveUp(${index})">🔼</button>
+            <button class="text-blue-400 hover:text-blue-300" onclick="moveDown(${index})">🔽</button>
+            <button class="text-red-500 hover:text-red-400" onclick="removeFile(${index})">❌</button>
+          </div>
         `;
         list.appendChild(li);
       });
@@ -536,10 +558,7 @@
     }
 
     async function mergePDFs() {
-      if (pdfFiles.length < 2) {
-        alert('Selecione ao menos dois arquivos PDF para juntar.');
-        return;
-      }
+      if (pdfFiles.length < 2) return alert('Selecione ao menos dois arquivos PDF para juntar.');
 
       const nomeArquivo = document.getElementById('fileNameInput').value.trim();
       const nomeFinal = nomeArquivo ? `${nomeArquivo}.pdf` : 'pdf-juntado.pdf';
@@ -556,19 +575,8 @@
 
       const mergedPdfBytes = await mergedPdf.save();
       const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = nomeFinal;
-      a.click();
-
-      URL.revokeObjectURL(url);
+      saveAs(blob, nomeFinal);
     }
-
-
-
-
 
     async function dividirPDF() {
       const input = document.getElementById('splitInput');
@@ -576,20 +584,14 @@
       const baseName = document.getElementById('splitBaseName').value.trim() || 'paginas';
       const paginasInput = document.getElementById('splitPages').value.trim();
 
-      if (!file) {
-        alert('Selecione um PDF');
-        return;
-      }
+      if (!file) return alert('Selecione um PDF');
 
       const arrayBuffer = await file.arrayBuffer();
       const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
       const totalPaginas = pdfDoc.getPageCount();
       const paginasSelecionadas = parsePaginas(paginasInput, totalPaginas);
 
-      if (paginasSelecionadas.length === 0) {
-        alert('Nenhuma página válida foi informada.');
-        return;
-      }
+      if (paginasSelecionadas.length === 0) return alert('Nenhuma página válida foi informada.');
 
       const novoPdf = await PDFLib.PDFDocument.create();
 
@@ -598,25 +600,10 @@
         novoPdf.addPage(paginaCopiada);
       }
 
-      novoPdf.setTitle(`Páginas Selecionadas`);
-      novoPdf.setAuthor('Meu Conversor');
-      novoPdf.setCreator('Meu Conversor Web');
-      novoPdf.setProducer('PDFLib');
-
       const pdfBytes = await novoPdf.save();
-
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${baseName}_selecionadas.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      saveAs(blob, `${baseName}_selecionadas.pdf`);
     }
-
-
 
     function fileToImageData(file, pica, quality, scale) {
       return new Promise(resolve => {
@@ -640,6 +627,7 @@
         reader.readAsDataURL(file);
       });
     }
+
     function parsePaginas(input, totalPaginas) {
       const numeros = new Set();
       const partes = input.split(',');
@@ -657,10 +645,8 @@
           if (!isNaN(n) && n >= 1 && n <= totalPaginas) numeros.add(n);
         }
       }
-
       return [...numeros].sort((a, b) => a - b);
     }
-
 
     async function converterPDFparaImagem() {
       const input = document.getElementById('pdfInput');
@@ -700,122 +686,34 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // --- ###################################################### ---
-    // --- #        MUDANÇA 4: FUNÇÃO comprimirPDF            # ---
-    // --- ###################################################### ---
-    // Esta função foi modificada para aceitar múltiplos arquivos
-    async function comprimirPDF() {
-      const input = document.getElementById('compressInput');
-      const files = input.files; // MUDANÇA: Pega todos os arquivos
-      const quality = parseFloat(document.getElementById('compressQuality').value);
-      const nome = document.getElementById('compressedName').value.trim() || 'comprimido';
-
-      if (!files || files.length === 0) return alert('Selecione um ou mais PDFs para comprimir.'); // MUDANÇA
-
-      // Feedback para o usuário
-      const button = document.querySelector('#compressPdf button');
-      const originalButtonText = button.textContent;
-      button.textContent = 'Comprimindo... aguarde...';
-      button.disabled = true;
-
-      try {
-        const { jsPDF } = window.jspdf;
-        const novoPDF = new jsPDF();
-        let firstPageInDoc = true; // Controla quando adicionar novas páginas
-
-        // Loop principal sobre os ARQUIVOS
-        for (const file of files) {
-          const arrayBuffer = await file.arrayBuffer(); // Converte arquivo para buffer
-          const typedarray = new Uint8Array(arrayBuffer);
-          const pdf = await pdfjsLib.getDocument(typedarray).promise;
-
-          // Loop interno sobre as PÁGINAS de cada arquivo
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            // Aumentar a escala pode melhorar a qualidade final, '2' é um bom valor
-            const viewport = page.getViewport({ scale: 2 });
-            const canvas = document.createElement('canvas');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-
-            // Converte a página renderizada em imagem JPEG com a qualidade escolhida
-            const imgData = canvas.toDataURL('image/jpeg', quality);
-
-            const pageWidth = novoPDF.internal.pageSize.getWidth();
-            const pageHeight = (canvas.height * pageWidth) / canvas.width;
-
-            if (!firstPageInDoc) {
-              novoPDF.addPage();
-            }
-            firstPageInDoc = false; // A partir da primeira página, sempre adiciona antes
-
-            novoPDF.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
-          }
-        } // Fim do loop de arquivos
-
-        novoPDF.save(`${nome}.pdf`);
-
-      } catch (error) {
-        console.error("Erro ao comprimir PDF:", error);
-        alert("Ocorreu um erro ao comprimir os PDFs.");
-      } finally {
-        // Limpa o input e o texto da área de drop
-        input.value = null; 
-        const dropAreaText = document.querySelector('#compressPdf p');
-        if (dropAreaText) {
-            dropAreaText.textContent = 'Arraste um PDF aqui ou clique para selecionar';
-        }
-        // Restaura o botão
-        button.textContent = originalButtonText;
-        button.disabled = false;
-      }
-    }
-    // --- ###################################################### ---
-    // --- #                  FIM DA MUDANÇA 4                # ---
-    // --- ###################################################### ---
-
     let ocrFile = null;
-
     function previewOcrFile(event) {
       const file = event.target.files[0];
       if (!file) return;
-
       ocrFile = file;
-
       const preview = document.getElementById('ocrPreview');
       preview.innerHTML = '';
-
       const img = document.createElement('img');
       img.src = URL.createObjectURL(file);
       img.className = 'max-w-full max-h-64 mx-auto rounded shadow';
-
       preview.appendChild(img);
     }
 
     async function extrairTextoImagem() {
-      if (!ocrFile) {
-        alert('Selecione uma imagem primeiro.');
-        return;
-      }
-
+      if (!ocrFile) return alert('Selecione uma imagem primeiro.');
       const resultArea = document.getElementById('ocrResult');
       resultArea.value = 'Processando... aguarde...';
-
-      const worker = await Tesseract.createWorker('por'); // 'por' para Português
+      const worker = await Tesseract.createWorker('por');
       const { data } = await worker.recognize(ocrFile);
       resultArea.value = data.text.trim();
       await worker.terminate();
     }
-
 
     function baixarTodasImagens() {
       const zip = new JSZip();
       const baseName = document.getElementById('imgZipName').value.trim() || 'pagina';
       const canvases = document.querySelectorAll('#outputCanvas canvas');
       let count = 0;
-
       canvases.forEach((canvas, i) => {
         canvas.toBlob(blob => {
           zip.file(`${baseName}_${i + 1}.jpg`, blob);
@@ -830,5 +728,4 @@
     }
   </script>
 </body>
-
 </html>
